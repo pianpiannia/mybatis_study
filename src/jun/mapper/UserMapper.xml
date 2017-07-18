@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jun.mapper.UserMapper">
+	<cache type="org.mybatis.caches.ehcache.EhcacheCache"/>
+
+	<!-- type:resultMap最终映射的Java对象类型，可以使用别名 
+		id:对resultMap的唯一标识
+	-->
+	<resultMap type="jun.pojo.User" id="userResultMap">
+		<!--id是对唯一标识列的定义 
+			column:查询出来的列名
+			property:type指定的实体类中的属性名
+			最终resultMap对column和property作一个映射关系
+		 -->
+		<id column="sno_" property="sno"/>
+		
+		<!-- result是对普通列的定义 -->
+		<result column="sname_" property="sname"/>
+	</resultMap>
+ 
+ 	<!-- sql片段
+ 		id:sql片段的唯一标识
+ 		经验：是基于表单来定义sql片段，提高课重用性
+ 		在sql片段中不要包括where
+ 	 -->
+ 	<sql id="query_user_where">
+ 		<if test="userCustomer!=null">
+ 			<if test="userCustomer.ssex!=null and userCustomer.ssex!=''">
+ 			and stu_info.ssex=#{userCustomer.ssex}
+ 			</if>
+ 			<if test="userCustomer.sname!=null and userCustomer.sname!=''">
+ 			and stu_info.sname like '%${userCustomer.sname}%'
+ 			</if>
+ 			<if test="snos!=null">
+ 				<foreach collection="snos" item="stu_info.sno" open="and (" close=")" separator="or">
+ 					sno=#{stu_info.sno}
+ 				</foreach>
+ 				
+ 			</if>
+ 		</if>
+ 	</sql>
+ 
+ <select id="findUserByIdResultMap" parameterType="String" resultMap="userResultMap">
+ 	select sno sno_,sname sname_ from stu_info where sno=#{sno}
+ </select>
+ 
+ <select id="findUserCount" parameterType="jun.pojo.UserQueryVo" resultType="int">
+ 	select count(*)from stu_info where stu_info.ssex='${userCustomer.ssex}' and stu_info.sname like '%${userCustomer.sname}%'
+ </select>
+ 
+ <!-- 综合查询，条件判断 ,引用sql片段-->
+ <select id="findUserList" parameterType="jun.pojo.UserQueryVo" resultType="jun.pojo.UserCustomer">
+ 	select * from stu_info 
+ 	<!-- where stu_info.ssex='${userCustomer.ssex}' 
+ 	and stu_info.sname like '%${userCustomer.sname}%'
+  -->
+  <where>
+ 	<include refid="query_user_where"></include>
+ </where>
+ </select>
+ 
+ 
+  <select id="findUserById" parameterType="String" resultType="jun.pojo.User">
+  	select * from stu_info where sno=#{sno}
+  </select>
+  
+  <select id="findUserByName" parameterType="String" resultType="jun.pojo.User">
+  	select * from stu_info where sname like '%${value}%'
+  </select>
+  
+  <insert id="insertUser" parameterType="jun.pojo.User">
+  	<!--  -->
+  	<selectKey keyProperty="sno" order="AFTER" resultType="java.lang.Integer">
+  		select last_insert_id()
+  	</selectKey>
+  	
+  	insert into stu_info(sname,sage,ssex,sdept) value(#{sname},#{sage},#{ssex},#{sdept})
+  </insert>
+  
+  <delete id="deleteUser" parameterType="java.lang.Integer">
+  	delete from stu_info where sno = #{sno}
+  </delete>
+  
+  <update id="updateUser" parameterType="jun.pojo.User">
+  	update stu_info set sname=#{sname},sage=#{sage},ssex=#{ssex},sdept=#{sdept} where sno=#{sno}
+  </update>
+</mapper>
